@@ -7,37 +7,36 @@
 
 import SwiftUI
 import CoreData
+import Resolver
 
-struct ContentView: View {
-    @Environment(\.managedObjectContext) private var viewContext
+struct HomeView: View {
+    @SwiftUI.Environment(\.managedObjectContext) private var viewContext
+    @ObservedObject private var homeVM: HomeVM = Resolver.resolve()
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
-        animation: .default)
-    private var items: FetchedResults<Item>
-
+//    @FetchRequest(
+//        sortDescriptors: [NSSortDescriptor(keyPath: \Note.date, ascending: true)],
+//        animation: .default)
     var body: some View {
-        List {
-            ForEach(items) { item in
-                Text("Item at \(item.timestamp!, formatter: itemFormatter)")
+        NavigationView {
+            VStack {
+                NoteList(notes: $homeVM.notes)
             }
-            .onDelete(perform: deleteItems)
-        }
-        .toolbar {
-            #if os(iOS)
-            EditButton()
-            #endif
-
-            Button(action: addItem) {
-                Label("Add Item", systemImage: "plus")
-            }
+            .navigationBarItems(trailing: (
+                NavigationLink(
+                    destination: EditNoteView(),
+                    label: {
+                        Image(systemName: "plus")
+                    })
+            ))
+            .background(Color.red)
+            .navigationBarTitle("Notes", displayMode: .inline)
         }
     }
 
     private func addItem() {
         withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
+//            let newItem = Note(context: viewContext)
+//            newItem.date = Date()
 
             do {
                 try viewContext.save()
@@ -52,7 +51,7 @@ struct ContentView: View {
 
     private func deleteItems(offsets: IndexSet) {
         withAnimation {
-            offsets.map { items[$0] }.forEach(viewContext.delete)
+//            offsets.map { items[$0] }.forEach(viewContext.delete)
 
             do {
                 try viewContext.save()
@@ -66,15 +65,25 @@ struct ContentView: View {
     }
 }
 
-private let itemFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .short
-    formatter.timeStyle = .medium
-    return formatter
-}()
+struct NoteList: View {
+    @Binding var notes: [Note]
+    
+    var body: some View {
+        if !notes.isEmpty {
+            List {
+                ForEach(notes) { item in
+                    NoteItemView(item: item)
+                }
+    //            .onDelete(perform: deleteItems)
+            }
+        } else {
+            Text("You don't have any notes. \nAdd a new note using the + button.")
+        }
+    }
+}
 
-struct ContentView_Previews: PreviewProvider {
+struct HomeView_Previews: PreviewProvider { 
     static var previews: some View {
-        ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        HomeView()
     }
 }

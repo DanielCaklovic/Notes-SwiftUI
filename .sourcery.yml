@@ -1,0 +1,9 @@
+sources:
+    - Notes
+templates:
+    - Templates
+output:
+  Generated
+
+args:
+  app: Notes
